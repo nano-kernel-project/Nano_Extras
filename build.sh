@@ -1,7 +1,12 @@
+if [ -z "$KERNEL_PATH" ]; then
 KERNEL_PATH=/home/rof/src/github.com/shreejoy/Nano_rosy
+else
+KERNEL_PATH=${pwd} 
+fi 
+
 OUT_PATH="out/arch/arm64/boot"
-export group_id=$(jq -r '.group_id' $KERNEL_PATH/extras/info.json)
-export channel_id=$(jq -r '.channel_id' $KERNEL_PATH/extras/info.json)
+export group_id=$(jq -r '.group_id' $KERNEL_PATH/extras/information.json)
+export channel_id=$(jq -r '.channel_id' $KERNEL_PATH/extras/information.json)
 
 [[ -z "${bottoken}" ]] && echo "API_KEY not defined, exiting!" && exit 1
 function sendTG() {
@@ -9,8 +14,8 @@ function sendTG() {
 }
 
 function clone {
-    export anykernel_link=$(jq -r '.anykernel_url' $KERNEL_PATH/extras/url.json)
-    export toolchain_link=$(jq -r '.toolchain_url' $KERNEL_PATH/extras/url.json)
+    export anykernel_link=$(jq -r '.anykernel_url' $KERNEL_PATH/extras/information.json)
+    export toolchain_link=$(jq -r '.toolchain_url' $KERNEL_PATH/extras/information.json)
 	git clone --depth=1 --no-single-branch $anykernel_link $KERNEL_PATH/anykernel2
 	git clone --depth=1 --no-single-branch $toolchain_link $KERNEL_PATH/Toolchain
    }
@@ -25,19 +30,19 @@ function exports {
 }
  
 function build {  
-for ((i=1;i<=2;i++));
+for ((i=0;i<=1;i++));
 do 
-    DEFCONFIG=$(jq -r '.deconfig' $i.json)
+    DEFCONFIG=$(jq -r '.[$i].deconfig' supported_version.json)
 	if [ -f $KERNEL_DIR/arch/arm64/configs/$DEFCONFIG ]
 	then 
-        export TYPE=$(jq -r '.type' $KERNEL_PATH/Nano_Extras/json/$i.json)
-		export DL_URL=$(jq -r '.base_url' $KERNEL_PATH/Nano_Extras/json/url.json)
-		export NUM=$(jq -r '.version' $KERNEL_PATH/Nano_Extras/json/$i.json)
+        export TYPE=$(jq -r '.[$i].type' $KERNEL_PATH/extras/supported_version.json)
+		export DL_URL=$(jq -r '.base_url' $KERNEL_PATH/extras/information.json)
+		export NUM=$(jq -r '.version' $KERNEL_PATH/extras/supported_version.json)
 		export BUILD_DATE="$(date +%M%Y%H-%d%m)"
 		export FILE_NAME="Nano_Kernel-rosy-$BUILD_DATE-$TYPE-$NUM.zip"
 		export LINK="$DL_URL/$TYPE/$FILE_NAME"
     else
-		echo "Defconfig Mismatch"
+		sendTG "Defconfig Mismatch"
 		echo "Exiting in 5 seconds"
 		sleep 5
 		exit
@@ -69,5 +74,25 @@ do
 		sendTG "❌ Nano for $TYPE build failed in $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds."
 	fi	
 }
+
+function changelogs {
+  export new_hash=$(git log --format="%H" -n 1)
+  export old_hash=$(jq -r '.commit_hash' $KERNEL_PATH/extras/information.json)
+  if [ -z "$old_hash" ]; then 
+     echo "No commit hash provided existing" 
+  else
+  export commit_range="${old_hash}..${new_hash}"
+  export commit_log="$(git log --format='%s (by %cn)' $commit_range)"
+  echo " " >> Nano-changelogs.md
+  echo " " >> Nano-changelogs.md
+  echo "Date - $(date)" >> Nano-changelogs.md
+  echo " " >> Nano-changelogs.md
+  printf '%s\n' "$commit_log" | while IFS= read -r line
+  do
+    echo "* ${line}"
+  done
+
+
+
 
 
