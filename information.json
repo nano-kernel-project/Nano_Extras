@@ -5,5 +5,6 @@
    "ci_base_path":"/home/rof/src/github.com/shreejoy/Nano_rosy/",
    "channel_id":"-1001373366892",
    "group_id":"-1001242182605",
-   "changelogs_url":"https://github.com/nano-kernel-project/Nano_Extras/blob/master/Nano-changelogs.md"
+   "changelogs_url":"https://github.com/nano-kernel-project/Nano_Extras/blob/master/Nano-changelogs.md",
+   "commit_hash":""
 }
