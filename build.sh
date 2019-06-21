@@ -13,14 +13,14 @@ function sendTG() {
     curl -s "https://api.telegram.org/bot${bottoken}/sendmessage" --data "text=${*}&chat_id="$group_id"6&parse_mode=Markdown" > /dev/null
 }
 
-function clone {
+function clone() {
     export anykernel_link=$(jq -r '.anykernel_url' $KERNEL_PATH/extras/information.json)
     export toolchain_link=$(jq -r '.toolchain_url' $KERNEL_PATH/extras/information.json)
 	git clone --depth=1 --no-single-branch $anykernel_link $KERNEL_PATH/anykernel2
 	git clone --depth=1 --no-single-branch $toolchain_link $KERNEL_PATH/Toolchain
    }
  
-function exports {
+function exports() {
 	export KBUILD_BUILD_USER="Nano-developers"
 	export KBUILD_BUILD_HOST="Nano-Team"
 	export ARCH=arm64
@@ -29,7 +29,7 @@ function exports {
 	export PATH
 }
  
-function build {  
+function build() {  
 for ((i=0;i<=1;i++));
 do 
     DEFCONFIG=$(jq -r '.[$i].deconfig' supported_version.json)
@@ -41,6 +41,7 @@ do
 		export BUILD_DATE="$(date +%M%Y%H-%d%m)"
 		export FILE_NAME="Nano_Kernel-rosy-$BUILD_DATE-$TYPE-$NUM.zip"
 		export LINK="$DL_URL/$TYPE/$FILE_NAME"
+		
     else
 		sendTG "Defconfig Mismatch"
 		echo "Exiting in 5 seconds"
@@ -75,7 +76,7 @@ do
 	fi	
 }
 
-function changelogs {
+function changelogs() {
   export new_hash=$(git log --format="%H" -n 1)
   export old_hash=$(jq -r '.commit_hash' $KERNEL_PATH/extras/information.json)
   if [ -z "$old_hash" ]; then 
@@ -94,10 +95,11 @@ function changelogs {
   jq --arg new_hash "$new_hash" '.commit_hash = $new_hash' $KERNEL_PATH/extras/information.json > $KERNEL_PATH/extras/information1.json
   rm -rf $KERNEL_PATH/extras/information.json
   mv $KERNEL_PATH/extras/information1.json $KERNEL_PATH/extras/information.json
-  git add $KERNEL_PATH/extrasNano-changelogs.md $KERNEL_PATH/extras/Nano-changelogs.md $KERNEL_PATH/extras/information.json
+  git add $KERNEL_PATH/extras/Nano-changelogs.md $KERNEL_PATH/extras/Nano-changelogs.md $KERNEL_PATH/extras/information.json
   git -c "user.name=shreejoy" -c "user.email=pshreejoy15@gmail.com" commit -m "Push new changes $(date)"
   git push -q https://${GITHUB_AUTH_TOKEN}@github.com/nano-kernel-project/Nano_Extras HEAD:master
 }
+  
 
 
 
