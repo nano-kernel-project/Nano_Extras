@@ -1,7 +1,7 @@
 ![Changelogs](https://i.imgur.com/INYmUKJ.jpg)
 
 
-#**Date** - Fri Jun 21 13:35:38 UTC 2019#
+#Date - Fri Jun 21 13:35:38 UTC 2019#
 
 * New kernel base by @sukrut4778 (by Dimitar)
 * Latest pie CAF tag LA.UM.7.6.r1-05300-89xx.0. (by Shreejoy)
