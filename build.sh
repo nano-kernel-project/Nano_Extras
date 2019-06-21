@@ -83,15 +83,15 @@ function changelogs {
   else
   export commit_range="${old_hash}..${new_hash}"
   export commit_log="$(git log --format='%s (by %cn)' $commit_range)"
-  echo " " >> Nano-changelogs.md
-  echo " " >> Nano-changelogs.md
-  echo "Date - $(date)" >> Nano-changelogs.md
-  echo " " >> Nano-changelogs.md
+  echo " " >> $KERNEL_PATH/extrasNano-changelogs.md
+  echo " " >> $KERNEL_PATH/extrasNano-changelogs.md
+  echo "Date - $(date)" >> $KERNEL_PATH/extrasNano-changelogs.md
+  echo " " >> $KERNEL_PATH/extrasNano-changelogs.md
   printf '%s\n' "$commit_log" | while IFS= read -r line
   do
-    echo "* ${line}"
+    echo "* ${line}" >> $KERNEL_PATH/extrasNano-changelogs.md
   done
-
+}
 
 
 
