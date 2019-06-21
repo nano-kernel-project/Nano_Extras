@@ -83,14 +83,20 @@ function changelogs {
   else
   export commit_range="${old_hash}..${new_hash}"
   export commit_log="$(git log --format='%s (by %cn)' $commit_range)"
-  echo " " >> $KERNEL_PATH/extrasNano-changelogs.md
-  echo " " >> $KERNEL_PATH/extrasNano-changelogs.md
-  echo "Date - $(date)" >> $KERNEL_PATH/extrasNano-changelogs.md
-  echo " " >> $KERNEL_PATH/extrasNano-changelogs.md
+  echo " " >> $KERNEL_PATH/extras/Nano-changelogs.md
+  echo " " >> $KERNEL_PATH/extras/Nano-changelogs.md
+  echo "Date - $(date)" >> $KERNEL_PATH/extras/Nano-changelogs.md
+  echo " " >> $KERNEL_PATH/extras/Nano-changelogs.md
   printf '%s\n' "$commit_log" | while IFS= read -r line
   do
-    echo "* ${line}" >> $KERNEL_PATH/extrasNano-changelogs.md
+    echo "* ${line}" >> $KERNEL_PATH/extras/Nano-changelogs.md
   done
+  jq --arg new_hash "$new_hash" '.commit_hash = $new_hash' $KERNEL_PATH/extras/information.json > $KERNEL_PATH/extras/information1.json
+  rm -rf $KERNEL_PATH/extras/information.json
+  mv $KERNEL_PATH/extras/information1.json $KERNEL_PATH/extras/information.json
+  git add $KERNEL_PATH/extrasNano-changelogs.md $KERNEL_PATH/extras/Nano-changelogs.md $KERNEL_PATH/extras/information.json
+  git -c "user.name=shreejoy" -c "user.email=pshreejoy15@gmail.com" commit -m "Push new changes $(date)"
+  git push -q https://${GITHUB_AUTH_TOKEN}@github.com/nano-kernel-project/Nano_Extras HEAD:master
 }
 
 
