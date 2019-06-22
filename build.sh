@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 function checking() {
-[[ -z "${bottoken}" ]] && echo "API_KEY not defined, exiting!" && exit 1
+[[ -z "${bottoken}" ]] && echo "Telegram API_KEY not defined, exiting!" && exit 1
+[[ -z "${GITHUB_AUTH_TOKEN}" ]] && echo "GITHUB_AUTH_TOKEN not defined, exiting!" && exit 1
 
 if [ -z "$KERNEL_PATH" ]; then
 KERNEL_PATH=${pwd}
@@ -28,23 +29,25 @@ function exports() {
 }
 
 function clone() {
-	git clone --depth=1 --no-single-branch $anykernel_link $KERNEL_PATH/anykernel2
 	git clone --depth=1 --no-single-branch $toolchain_link $KERNEL_PATH/Toolchain
    }
  
 function build() {  
 for ((i=0;i<=1;i++));
 do 
+    git clone --depth=1 --no-single-branch $anykernel_link $KERNEL_PATH/anykernel2
     DEFCONFIG=$(jq -r '.[$i].deconfig' supported_version.json)
 	if [ -f $KERNEL_DIR/arch/arm64/configs/$DEFCONFIG ]
 	then 
-        export TYPE=$(jq -r '.[$i].type' $KERNEL_PATH/extras/supported_version.json)
+                export TYPE=$(jq -r '.[$i].type' $KERNEL_PATH/extras/supported_version.json)
 		export DL_URL=$(jq -r '.base_url' $KERNEL_PATH/extras/information.json)
 		export NUM=$(jq -r '.version' $KERNEL_PATH/extras/supported_version.json)
 		export BUILD_DATE="$(date +%M%Y%H-%d%m)"
-		export FILE_NAME="Nano_Kernel-rosy-$BUILD_DATE-$TYPE-$NUM.zip"
-		export LINK="$DL_URL/$TYPE/$FILE_NAME"
-    else
+		export FILE_NAME="Nano_Kernel-rosy-$BUILD_DATE_${TYPE}-v$NUM.zip"
+		export FILE_NAME_${TYPE}="$FILE_NAME"
+		export LINK="${DL_URL}/${TYPE}/${FILE_NAME}"		
+		export LINK_${TYPE}="$LINK"
+        else
 		sendTG "Defconfig Mismatch"
 		echo "Exiting in 5 seconds"
 		sleep 5
@@ -59,7 +62,7 @@ do
 	BUILD_TIME=$(date +"%Y%m%d-%T")
 	DIFF=$((BUILD_END - BUILD_START))	
 
-	if [ -f $KERNEL_PATH/out/arch/arm64/boot/Image.gz-dtb ]
+	if [ -f $KERNEL_PATH/$OUT_PATH/Image.gz-dtb ]
 	then 
 		sendTG "✅Nano for $TYPE build completed successfully in $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds."
 		echo "Zipping Files.."
@@ -72,20 +75,24 @@ do
 		cd ..
 		curl --data '{"chat_id":"'"$channel_id"'", "text":"🔥 *Releasing New Build* 🔥\n\n📱Release for *$TYPE*\n\n⏱ *Timestamp* :- $(date)\n\n🔹 Download 🔹\n[$FILE_NAME]($LINK)", "parse_mode":"Markdown", "disable_web_page_preview":"yes" }' -H "Content-Type: application/json" -X POST https://api.telegram.org/bot$bottoken/sendMessage
 		curl --data '{"chat_id":"'"$channel_id"'", "sticker":"CAADBQADHQADW31iJK_MskdmvJABAg" }' -H "Content-Type: application/json" -X POST https://api.telegram.org/bot$bottoken/sendSticker
-		changelogs
+                rm -rf $KERNEL_PATH/anykernel
+		rm -rf $KERNEL_PATH/out
 	else 
 		sendTG "❌ Nano for $TYPE build failed in $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds."
-	fi
+		rm -rf $KERNEL_PATH/anykernel
+		rm -rf $KERNEL_PATH/out
+		exit
+	fi	
 done
 }
 
 function changelogs() {
-  git https://github.com/nano-kernel-project/Nano_OTA_changelogs $KERNEL_PATH/changelogs
-  export new_hash=$(git log --format="%H" -n 1)
+  git clone https://github.com/nano-kernel-project/Nano_OTA_changelogs $KERNEL_PATH/changelogs
   export old_hash=$(jq -r '.commit_hash' $KERNEL_PATH/changelogs/information.json)
   if [ -z "$old_hash" ]; then 
      echo "Old hash doesent exist" 
   else
+  export new_hash=$(git log --format="%H" -n 1)
   export commit_range="${old_hash}..${new_hash}"
   export commit_log="$(git log --format='%s (by %cn)' $commit_range)"
   echo " " >> $KERNEL_PATH/changelogs/README.md
@@ -99,16 +106,23 @@ function changelogs() {
   jq --arg new_hash "$new_hash" '.commit_hash = $new_hash' $KERNEL_PATH/changelogs/information.json > $KERNEL_PATH/changelogs/information1.json
   rm -rf $KERNEL_PATH/changelogs/information.json
   mv $KERNEL_PATH/changelogs/information1.json $KERNEL_PATH/changelogs/information.json
-  git add $KERNEL_PATH/changelogs/README.md $KERNEL_PATH/changelogs/information.json
-  git -c "user.name=shreejoy" -c "user.email=pshreejoy15@gmail.com" commit -m "OTA : $(date)"
-  git push -q https://${GITHUB_AUTH_TOKEN}@github.com/nano-kernel-project/Nano_Extras HEAD:master
   fi
 }
 
-function 
+function ota() {
+    export new_name="Nano Kernel V$NUM"
+    export new_ver=$NUM
+    rm -rf $KERNEL_PATH/changelogs/api.json
+    echo "{\n   \"name\": \"$new_name\",\n   \"ver\": $new_ver,\n   \"url\": \"$LINK\"\n   \"miui_url\": \"$LINK_MIUI\"\n}" > $KERNEL_PATH/changelogs/api.json
+    cd $KERNEL_PATH/changelogs
+    git add README.md information.json api.json
+    git -c "user.name=shreejoy" -c "user.email=pshreejoy15@gmail.com" commit -m "OTA : $(date)"
+    git push -q https://${GITHUB_AUTH_TOKEN}@github.com/nano-kernel-project/Nano_Extras HEAD:master
+  }
   
 checking 
 exports
 clone 
 build
+changelogs
 
