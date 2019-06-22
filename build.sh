@@ -92,6 +92,10 @@ function changelogs() {
    export old_hash=$(jq -r '.commit_hash' $KERNEL_PATH/changelogs/information.json)
    if [ -z "$old_hash" ]; then 
       echo "Old hash doesent exist" 
+      export new_hash=$(git log --format="%H" -n 1)
+      jq --arg new_hash "$new_hash" '.commit_hash = $new_hash' $KERNEL_PATH/changelogs/information.json > $KERNEL_PATH/changelogs/information1.json
+      rm -rf $KERNEL_PATH/changelogs/information.json
+      mv $KERNEL_PATH/changelogs/information1.json $KERNEL_PATH/changelogs/information.json
    else
       export new_hash=$(git log --format="%H" -n 1)
       export commit_range="${old_hash}..${new_hash}"
