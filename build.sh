@@ -70,12 +70,13 @@ function build() {
 		  mv $KERNEL_PATH/anykernel2/Image.gz-dtb $KERNEL_PATH/anykernel2/zImage
 		  cd $KERNEL_PATH/anykernel2
 		     zip -r $FILE_NAME * -x .git README.md 
+		     scp $FILE_NAME pshreejoy15@frs.sourceforge.net:/home/frs/p/nano-releases/$TYPE
 		     rm -rf zImage
 		     mv $FILE_NAME $KERNEL_PATH
 		  cd ..
 		  curl --data '{"chat_id":"'"$channel_id"'", "text":"🔥 *Releasing New Build* 🔥\n\n📱Release for *$TYPE*\n\n⏱ *Timestamp* :- $(date)\n\n🔹 Download 🔹\n[$FILE_NAME]($LINK)", "parse_mode":"Markdown", "disable_web_page_preview":"yes" }' -H "Content-Type: application/json" -X POST https://api.telegram.org/bot$bottoken/sendMessage
 		  curl --data '{"chat_id":"'"$channel_id"'", "sticker":"CAADBQADHQADW31iJK_MskdmvJABAg" }' -H "Content-Type: application/json" -X POST https://api.telegram.org/bot$bottoken/sendSticker
-          rm -rf $KERNEL_PATH/anykernel
+                  rm -rf $KERNEL_PATH/anykernel
 		  rm -rf $KERNEL_PATH/out
 	   else 
 		  sendTG "❌ Nano for $TYPE build failed in $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds."
