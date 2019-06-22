@@ -44,7 +44,6 @@ do
 		export BUILD_DATE="$(date +%M%Y%H-%d%m)"
 		export FILE_NAME="Nano_Kernel-rosy-$BUILD_DATE-$TYPE-$NUM.zip"
 		export LINK="$DL_URL/$TYPE/$FILE_NAME"
-		
     else
 		sendTG "Defconfig Mismatch"
 		echo "Exiting in 5 seconds"
@@ -76,32 +75,37 @@ do
 		changelogs
 	else 
 		sendTG "❌ Nano for $TYPE build failed in $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds."
-	fi	
+	fi
+done
 }
 
 function changelogs() {
+  git https://github.com/nano-kernel-project/Nano_OTA_changelogs $KERNEL_PATH/changelogs
   export new_hash=$(git log --format="%H" -n 1)
-  export old_hash=$(jq -r '.commit_hash' $KERNEL_PATH/extras/information.json)
+  export old_hash=$(jq -r '.commit_hash' $KERNEL_PATH/changelogs/information.json)
   if [ -z "$old_hash" ]; then 
-     echo "No commit hash provided existing" 
+     echo "Old hash doesent exist" 
   else
   export commit_range="${old_hash}..${new_hash}"
   export commit_log="$(git log --format='%s (by %cn)' $commit_range)"
-  echo " " >> $KERNEL_PATH/extras/Nano-changelogs.md
-  echo " " >> $KERNEL_PATH/extras/Nano-changelogs.md
-  echo "Date - $(date)" >> $KERNEL_PATH/extras/Nano-changelogs.md
-  echo " " >> $KERNEL_PATH/extras/Nano-changelogs.md
+  echo " " >> $KERNEL_PATH/changelogs/README.md
+  echo " " >> $KERNEL_PATH/extras/changelogs/README.md
+  echo "Date - $(date)" >> $KERNEL_PATH/changelogs/README.md
+  echo " " >> $KERNEL_PATH/changelogs/README.md
   printf '%s\n' "$commit_log" | while IFS= read -r line
   do
-    echo "* ${line}" >> $KERNEL_PATH/extras/Nano-changelogs.md
+    echo "* ${line}" >> $KERNEL_PATH/changelogs/README.md
   done
-  jq --arg new_hash "$new_hash" '.commit_hash = $new_hash' $KERNEL_PATH/extras/information.json > $KERNEL_PATH/extras/information1.json
-  rm -rf $KERNEL_PATH/extras/information.json
-  mv $KERNEL_PATH/extras/information1.json $KERNEL_PATH/extras/information.json
-  git add $KERNEL_PATH/extras/Nano-changelogs.md $KERNEL_PATH/extras/Nano-changelogs.md $KERNEL_PATH/extras/information.json
-  git -c "user.name=shreejoy" -c "user.email=pshreejoy15@gmail.com" commit -m "Push new changes $(date)"
+  jq --arg new_hash "$new_hash" '.commit_hash = $new_hash' $KERNEL_PATH/changelogs/information.json > $KERNEL_PATH/changelogs/information1.json
+  rm -rf $KERNEL_PATH/changelogs/information.json
+  mv $KERNEL_PATH/changelogs/information1.json $KERNEL_PATH/changelogs/information.json
+  git add $KERNEL_PATH/changelogs/README.md $KERNEL_PATH/changelogs/information.json
+  git -c "user.name=shreejoy" -c "user.email=pshreejoy15@gmail.com" commit -m "OTA : $(date)"
   git push -q https://${GITHUB_AUTH_TOKEN}@github.com/nano-kernel-project/Nano_Extras HEAD:master
+  fi
 }
+
+function 
   
 checking 
 exports
