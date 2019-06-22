@@ -1,33 +1,36 @@
-if [ -z "$KERNEL_PATH" ]; then
-KERNEL_PATH=/home/rof/src/github.com/shreejoy/Nano_rosy
-else
-KERNEL_PATH=${pwd} 
-fi 
+#!/usr/bin/env bash
 
-OUT_PATH="out/arch/arm64/boot"
-export group_id=$(jq -r '.group_id' $KERNEL_PATH/extras/information.json)
-export channel_id=$(jq -r '.channel_id' $KERNEL_PATH/extras/information.json)
-
+function checking() {
 [[ -z "${bottoken}" ]] && echo "API_KEY not defined, exiting!" && exit 1
+
+if [ -z "$KERNEL_PATH" ]; then
+KERNEL_PATH=${pwd}
+else
+export KERNEL_PATH
+fi 
+}
+
 function sendTG() {
     curl -s "https://api.telegram.org/bot${bottoken}/sendmessage" --data "text=${*}&chat_id="$group_id"6&parse_mode=Markdown" > /dev/null
 }
 
-function clone() {
-    export anykernel_link=$(jq -r '.anykernel_url' $KERNEL_PATH/extras/information.json)
-    export toolchain_link=$(jq -r '.toolchain_url' $KERNEL_PATH/extras/information.json)
-	git clone --depth=1 --no-single-branch $anykernel_link $KERNEL_PATH/anykernel2
-	git clone --depth=1 --no-single-branch $toolchain_link $KERNEL_PATH/Toolchain
-   }
- 
 function exports() {
 	export KBUILD_BUILD_USER="Nano-developers"
 	export KBUILD_BUILD_HOST="Nano-Team"
 	export ARCH=arm64
 	export SUBARCH=arm64
-    PATH=$KERNEL_DIR/Toolchain/bin:$PATH
-	export PATH
+        export PATH=$KERNEL_DIR/Toolchain/bin:$PATH
+	export OUT_PATH="out/arch/arm64/boot"
+        export anykernel_link=$(jq -r '.anykernel_url' $KERNEL_PATH/extras/information.json)
+        export toolchain_link=$(jq -r '.toolchain_url' $KERNEL_PATH/extras/information.json)
+	export group_id=$(jq -r '.group_id' $KERNEL_PATH/extras/information.json)
+        export channel_id=$(jq -r '.channel_id' $KERNEL_PATH/extras/information.json)
 }
+
+function clone() {
+	git clone --depth=1 --no-single-branch $anykernel_link $KERNEL_PATH/anykernel2
+	git clone --depth=1 --no-single-branch $toolchain_link $KERNEL_PATH/Toolchain
+   }
  
 function build() {  
 for ((i=0;i<=1;i++));
@@ -70,7 +73,7 @@ do
 		cd ..
 		curl --data '{"chat_id":"'"$channel_id"'", "text":"🔥 *Releasing New Build* 🔥\n\n📱Release for *$TYPE*\n\n⏱ *Timestamp* :- $(date)\n\n🔹 Download 🔹\n[$FILE_NAME]($LINK)", "parse_mode":"Markdown", "disable_web_page_preview":"yes" }' -H "Content-Type: application/json" -X POST https://api.telegram.org/bot$bottoken/sendMessage
 		curl --data '{"chat_id":"'"$channel_id"'", "sticker":"CAADBQADHQADW31iJK_MskdmvJABAg" }' -H "Content-Type: application/json" -X POST https://api.telegram.org/bot$bottoken/sendSticker
-        fi
+		changelogs
 	else 
 		sendTG "❌ Nano for $TYPE build failed in $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds."
 	fi	
@@ -100,7 +103,8 @@ function changelogs() {
   git push -q https://${GITHUB_AUTH_TOKEN}@github.com/nano-kernel-project/Nano_Extras HEAD:master
 }
   
-
-
-
+checking 
+exports
+clone 
+build
 
