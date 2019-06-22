@@ -5,7 +5,7 @@ function checking() {
    [[ -z "${GITHUB_AUTH_TOKEN}" ]] && echo "GITHUB_AUTH_TOKEN not defined, exiting!" && exit 1
 
    if [ -z "$KERNEL_PATH" ]; then
-      KERNEL_PATH=${pwd}
+      KERNEL_PATH=$(pwd)
    else
       export KERNEL_PATH
    fi 
@@ -36,12 +36,12 @@ function build() {
    for ((i=0;i<=1;i++));
    do 
       git clone --depth=1 --no-single-branch $anykernel_link $KERNEL_PATH/anykernel2
-      DEFCONFIG=$(jq -r '.[$i].deconfig' $KERNEL_PATH/extras/supported_version.json)
+      DEFCONFIG=$(jq -r --argjson i "$i" '.[$i].deconfig' $KERNEL_PATH/extras/supported_version.json)
 	  if [ -f $KERNEL_DIR/arch/arm64/configs/$DEFCONFIG ]
 	  then 
-         export TYPE=$(jq -r '.[$i].type' $KERNEL_PATH/extras/supported_version.json)
+         export TYPE=$(jq -r --argjson i "$i" '.[$i].type' $KERNEL_PATH/extras/supported_version.json)
 		 export BASE_URL=$(jq -r '.base_url' $KERNEL_PATH/extras/information.json)
-		 export NUM=$(jq -r '.version' $KERNEL_PATH/extras/supported_version.json)
+		 export NUM=$(jq -r --argjson i "$i" '.[$i].version' $KERNEL_PATH/extras/supported_version.json)
 		 export BUILD_DATE="$( date +"%Y%m%d-%H%M" )"
 		 export FILE_NAME="Nano_Kernel-rosy-$BUILD_DATE_${TYPE}-v$NUM.zip"
 		 export FILE_NAME_${TYPE}="$FILE_NAME"
