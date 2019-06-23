@@ -30,8 +30,9 @@ function clone() {
 }
  
 function build() {  
-   for ((i=0;i<=1;i++));
-   do 
+  # for ((i=0;i<=1;i++));
+ #  do
+      export i=0
       git clone --depth=1 --no-single-branch $anykernel_link $KERNEL_PATH/anykernel2
       DEFCONFIG=$(jq -r --argjson i "$i" '.[$i].defconfig' $KERNEL_PATH/extras/supported_version.json)
       if [ -f $KERNEL_PATH/arch/arm64/configs/$DEFCONFIG ]
@@ -83,7 +84,7 @@ function build() {
 		  rm -rf $KERNEL_PATH/out
 		  exit
 	   fi	
-  done
+#  done
 }
 
 function changelogs() {
