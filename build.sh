@@ -14,9 +14,6 @@ function checking() {
 function exports() {
    export KBUILD_BUILD_USER="Nano-developers"
    export KBUILD_BUILD_HOST="Nano-Team"
-   export ARCH=arm64
-   export SUBARCH=arm64
-   export PATH=$KERNEL_DIR/Toolchain/bin:$PATH
    export OUT_PATH="out/arch/arm64/boot"
    export anykernel_link=$(jq -r '.anykernel_url' $KERNEL_PATH/extras/information.json)
    export toolchain_link=$(jq -r '.toolchain_url' $KERNEL_PATH/extras/information.json)
@@ -36,8 +33,8 @@ function build() {
    for ((i=0;i<=1;i++));
    do 
       git clone --depth=1 --no-single-branch $anykernel_link $KERNEL_PATH/anykernel2
-      DEFCONFIG=$(jq -r --argjson i "$i" '.[$i].deconfig' $KERNEL_PATH/extras/supported_version.json)
-	  if [ -f $KERNEL_DIR/arch/arm64/configs/$DEFCONFIG ]
+      DEFCONFIG=$(jq -r --argjson i "$i" '.[$i].defconfig' $KERNEL_PATH/extras/supported_version.json)
+	  if [ -f $KERNEL_PATH/arch/arm64/configs/$DEFCONFIG ]
 	  then 
          export TYPE=$(jq -r --argjson i "$i" '.[$i].type' $KERNEL_PATH/extras/supported_version.json)
 		 export BASE_URL=$(jq -r '.base_url' $KERNEL_PATH/extras/information.json)
@@ -54,10 +51,12 @@ function build() {
 		 exit
 	   fi
 
-	   make O=out $DEFCONFIG
 	   BUILD_START=$(date +"%s")
-	   make -j${JOBS} O=out \
-	   CROSS_COMPILE="$KERNEL_PATH/Toolchain/bin/aarch64-linux-android-" 
+       export ARCH=arm64
+       export CROSS_COMPILE="$KERNEL_PATH/Toolchain/bin/aarch64-linux-android-"
+       mkdir output
+       make -C $KERNEL_PATH O=output $DEFCONFIG
+       make -j32 -C $(pwd) O=out
 	   BUILD_END=$(date +"%s")
 	   BUILD_TIME=$(date +"%Y%m%d-%T")
 	   DIFF=$((BUILD_END - BUILD_START))	
@@ -89,13 +88,14 @@ function build() {
 
 function changelogs() {
    git clone https://github.com/nano-kernel-project/Nano_OTA_changelogs $KERNEL_PATH/changelogs
-   export old_hash=$(jq -r '.commit_hash' $KERNEL_PATH/changelogs/information.json)
+   export old_hash=$(jq -r '.commit_hash' $KERNEL_PATH/changelogs/commit_hash.json)
    if [ -z "$old_hash" ]; then 
       echo "Old hash doesent exist" 
       export new_hash=$(git log --format="%H" -n 1)
-      jq --arg new_hash "$new_hash" '.commit_hash = $new_hash' $KERNEL_PATH/changelogs/information.json > $KERNEL_PATH/changelogs/information1.json
-      rm -rf $KERNEL_PATH/changelogs/information.json
-      mv $KERNEL_PATH/changelogs/information1.json $KERNEL_PATH/changelogs/information.json
+      jq --arg new_hash "$new_hash" '.commit_hash = $new_hash' $KERNEL_PATH/changelogs/commit_hash.json > $KERNEL_PATH/changelogs/commit_hash1.json
+      rm -rf $KERNEL_PATH/changelogs/commit_hash.json
+      mv $KERNEL_PATH/changelogs/commit_hash1.json $KERNEL_PATH/changelogs/commit_hash.json
+	  ota
    else
       export new_hash=$(git log --format="%H" -n 1)
       export commit_range="${old_hash}..${new_hash}"
@@ -108,9 +108,9 @@ function changelogs() {
       do
          echo "* ${line}" >> $KERNEL_PATH/changelogs/README.md
       done
-      jq --arg new_hash "$new_hash" '.commit_hash = $new_hash' $KERNEL_PATH/changelogs/information.json > $KERNEL_PATH/changelogs/information1.json
-      rm -rf $KERNEL_PATH/changelogs/information.json
-      mv $KERNEL_PATH/changelogs/information1.json $KERNEL_PATH/changelogs/information.json
+      jq --arg new_hash "$new_hash" '.commit_hash = $new_hash' $KERNEL_PATH/changelogs/commit_hash.json > $KERNEL_PATH/changelogs/commit_hash1.json
+      rm -rf $KERNEL_PATH/changelogs/commit_hash.json
+      mv $KERNEL_PATH/changelogs/commit_hash1.json $KERNEL_PATH/changelogs/commit_hash.json
       ota
    fi
 }
