@@ -56,7 +56,7 @@ function build() {
        export ARCH=arm64
        export CROSS_COMPILE="$KERNEL_PATH/Toolchain/bin/aarch64-linux-android-"
        mkdir output
-       make -C $KERNEL_PATH O=output $DEFCONFIG
+       make -C $KERNEL_PATH O=out $DEFCONFIG
        make -j32 -C $(pwd) O=out
        BUILD_END=$(date +"%s")
        BUILD_TIME=$(date +"%Y%m%d-%T")
