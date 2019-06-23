@@ -22,7 +22,7 @@ function exports() {
 }
 
 function sendTG() {
-   curl -s "https://api.telegram.org/bot${bottoken}/sendmessage" --data "text=${*}&chat_id="$group_id"6&parse_mode=Markdown" > /dev/null
+   curl -s "https://api.telegram.org/bot${bottoken}/sendmessage" --data "text=${*}&chat_id=$group_id&parse_mode=Markdown" > /dev/null
 }
 
 function clone() {
@@ -34,18 +34,18 @@ function build() {
    do 
       git clone --depth=1 --no-single-branch $anykernel_link $KERNEL_PATH/anykernel2
       DEFCONFIG=$(jq -r --argjson i "$i" '.[$i].defconfig' $KERNEL_PATH/extras/supported_version.json)
-	  if [ -f $KERNEL_PATH/arch/arm64/configs/$DEFCONFIG ]
-	  then 
+      if [ -f $KERNEL_PATH/arch/arm64/configs/$DEFCONFIG ]
+      then 
          export TYPE=$(jq -r --argjson i "$i" '.[$i].type' $KERNEL_PATH/extras/supported_version.json)
 		 export BASE_URL=$(jq -r '.base_url' $KERNEL_PATH/extras/information.json)
 		 export NUM=$(jq -r --argjson i "$i" '.[$i].version' $KERNEL_PATH/extras/supported_version.json)
 		 export BUILD_DATE="$( date +"%Y%m%d-%H%M" )"
-		 export FILE_NAME="Nano_Kernel-rosy-$BUILD_DATE_${TYPE}-v$NUM.zip"
+		 export FILE_NAME="Nano_Kernel-rosy-${BUILD_DATE}-${TYPE}-v${NUM}.zip"
 		 export FILE_NAME_${TYPE}="$FILE_NAME"
 		 export LINK="${BASE_URL}/${TYPE}/${FILE_NAME}"		
 		 export LINK_${TYPE}="$LINK"
        else
-		 sendTG "Defconfig Mismatch"
+		 sendTG "Defconfig Mismatch, Exiting..."
 		 echo "Exiting in 5 seconds"
 		 sleep 5
 		 exit
@@ -57,9 +57,9 @@ function build() {
        mkdir output
        make -C $KERNEL_PATH O=output $DEFCONFIG
        make -j32 -C $(pwd) O=out
-	   BUILD_END=$(date +"%s")
-	   BUILD_TIME=$(date +"%Y%m%d-%T")
-	   DIFF=$((BUILD_END - BUILD_START))	
+       BUILD_END=$(date +"%s")
+       BUILD_TIME=$(date +"%Y%m%d-%T")
+       DIFF=$((BUILD_END - BUILD_START))	
 
 	   if [ -f $KERNEL_PATH/$OUT_PATH/Image.gz-dtb ]
 	   then 
@@ -95,7 +95,7 @@ function changelogs() {
       jq --arg new_hash "$new_hash" '.commit_hash = $new_hash' $KERNEL_PATH/changelogs/commit_hash.json > $KERNEL_PATH/changelogs/commit_hash1.json
       rm -rf $KERNEL_PATH/changelogs/commit_hash.json
       mv $KERNEL_PATH/changelogs/commit_hash1.json $KERNEL_PATH/changelogs/commit_hash.json
-	  ota
+      ota
    else
       export new_hash=$(git log --format="%H" -n 1)
       export commit_range="${old_hash}..${new_hash}"
