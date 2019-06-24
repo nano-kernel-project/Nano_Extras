@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+function colors() {
+	red='\033[1;31m'
+	green='\033[1;32m'
+	white='\033[1;37m'
+	cyan='\033[1;36m'
+	darkwhite='\033[0;37m'
+}
+
 function checking() {
    [[ -z "${bottoken}" ]] && echo "Telegram API_KEY not defined, exiting!" && exit 1
    [[ -z "${GITHUB_AUTH_TOKEN}" ]] && echo "GITHUB_AUTH_TOKEN not defined, exiting!" && exit 1
@@ -26,13 +34,15 @@ function sendTG() {
 }
 
 function clone() {
+        printf "\n>>> ${white}Cloning ${cyan}AOSP-GCC-4.9${darkwhite}...\n"
 	git clone --depth=1 --no-single-branch $toolchain_link $KERNEL_PATH/Toolchain
 }
  
 function build() {  
-  # for ((i=0;i<=1;i++));
- #  do
-      export i=0
+    for ((i=0;i<=1;i++));
+    do
+      #export i=0
+      printf "\n>>> ${white}Cloning ${cyan}ANYKERNEL12${darkwhite}...\n"
       git clone --depth=1 --no-single-branch $anykernel_link $KERNEL_PATH/anykernel2
       DEFCONFIG=$(jq -r --argjson i "$i" '.[$i].defconfig' $KERNEL_PATH/extras/supported_version.json)
       if [ -f $KERNEL_PATH/arch/arm64/configs/$DEFCONFIG ]
@@ -43,7 +53,7 @@ function build() {
 		 export BUILD_DATE="$( date +"%Y%m%d-%H%M" )"
 		 export FILE_NAME="Nano_Kernel-rosy-${BUILD_DATE}-${TYPE}-v${NUM}.zip"
 		 export FILE_NAME_${TYPE}="$FILE_NAME"
-		 export LINK="${BASE_URL}/${TYPE}/${FILE_NAME}"		
+		 export LINK="${BASE_URL}${TYPE}/${FILE_NAME}"		
 		 export LINK_${TYPE}="$LINK"
        else
 		 sendTG "Defconfig Mismatch, Exiting..."
@@ -55,7 +65,7 @@ function build() {
 	   BUILD_START=$(date +"%s")
        export ARCH=arm64
        export CROSS_COMPILE="$KERNEL_PATH/Toolchain/bin/aarch64-linux-android-"
-       mkdir output
+       mkdir out
        make -C $KERNEL_PATH O=out $DEFCONFIG
        make -j32 -C $(pwd) O=out
        BUILD_END=$(date +"%s")
@@ -85,7 +95,7 @@ function build() {
 		  rm -rf $KERNEL_PATH/out
 		  exit
 	   fi	
-#  done
+   done
 }
 
 function changelogs() {
@@ -103,8 +113,8 @@ function changelogs() {
       export commit_range="${old_hash}..${new_hash}"
       export commit_log="$(git log --format='%s (by %cn)' $commit_range)"
       echo " " >> $KERNEL_PATH/changelogs/README.md
-      echo " " >> $KERNEL_PATH/extras/changelogs/README.md
-      echo "Date - $(date)" >> $KERNEL_PATH/changelogs/README.md
+      echo " " >> $KERNEL_PATH/changelogs/README.md
+      echo "### Date - $(date) ###" >> $KERNEL_PATH/changelogs/README.md
       echo " " >> $KERNEL_PATH/changelogs/README.md
       printf '%s\n' "$commit_log" | while IFS= read -r line
       do
@@ -121,9 +131,9 @@ function ota() {
    export new_name="Nano Kernel V$NUM"
    export new_ver=$NUM
    rm -rf $KERNEL_PATH/changelogs/api.json
-   echo "{\n   \"name\": \"$new_name\",\n   \"ver\": $new_ver,\n   \"url\": \"$LINK_AOSP\"\n   \"miui_url\": \"$LINK_MIUI\"\n}" > $KERNEL_PATH/changelogs/api.json
+   printf '{ "name": "$new_name",n   "ver": $new_ver, "url": "$LINK_AOSP"  "miui_url": "$LINK_MIUI"}' > $KERNEL_PATH/changelogs/api.json
    cd $KERNEL_PATH/changelogs
-      git add README.md information.json api.json
+      git add README.md commit_hash.json api.json
       git -c "user.name=shreejoy" -c "user.email=pshreejoy15@gmail.com" commit -m "OTA : $(date)"
       git push -q https://${GITHUB_AUTH_TOKEN}@github.com/nano-kernel-project/Nano_Extras HEAD:master
    cd ..
