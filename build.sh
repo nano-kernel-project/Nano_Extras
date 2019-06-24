@@ -131,7 +131,7 @@ function ota() {
    export new_name="Nano Kernel V$NUM"
    export new_ver=$NUM
    rm -rf $KERNEL_PATH/changelogs/api.json
-   printf '{ "name": "$new_name",n   "ver": $new_ver, "url": "$LINK_AOSP"  "miui_url": "$LINK_MIUI"}' > $KERNEL_PATH/changelogs/api.json
+   printf '{\n   \"name\": \"$new_name\",\n   \"ver\": $new_ver,\n   \"url\": \"$LINK_AOSP\"\n   \"miui_url\": \"$LINK_MIUI\"\n}' > $KERNEL_PATH/changelogs/api.json
    cd $KERNEL_PATH/changelogs
       git add README.md commit_hash.json api.json
       git -c "user.name=shreejoy" -c "user.email=pshreejoy15@gmail.com" commit -m "OTA : $(date)"
