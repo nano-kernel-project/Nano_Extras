@@ -39,17 +39,17 @@ function clone() {
 }
  
 function build() {  
-    for ((i=0;i<=1;i++));
+    for VERSION in $(jq -r '.[].type' $KERNEL_PATH/extras/supported_version.json)
     do
-      #export i=0
+      JSON=$(jq --arg V "$VERSION" '.[] | select(type==$VERSION)')
       printf "\n>>> ${white}Cloning ${cyan}ANYKERNEL12${darkwhite}...\n"
       git clone --depth=1 --no-single-branch $anykernel_link $KERNEL_PATH/anykernel2
-      DEFCONFIG=$(jq -r --argjson i "$i" '.[$i].defconfig' $KERNEL_PATH/extras/supported_version.json)
+      DEFCONFIG=$(jq -r '.defconfig' <<< $JSON)
       if [ -f $KERNEL_PATH/arch/arm64/configs/$DEFCONFIG ]
       then 
-         export TYPE=$(jq -r --argjson i "$i" '.[$i].type' $KERNEL_PATH/extras/supported_version.json)
+         export TYPE=$(jq -r '.[].type' <<< $JSON)
 		 export BASE_URL=$(jq -r '.base_url' $KERNEL_PATH/extras/information.json)
-		 export NUM=$(jq -r --argjson i "$i" '.[$i].version' $KERNEL_PATH/extras/supported_version.json)
+		 export NUM=$(jq -r '.[].version' <<< $JSON)
 		 export BUILD_DATE="$( date +"%Y%m%d-%H%M" )"
 		 export FILE_NAME="Nano_Kernel-rosy-${BUILD_DATE}-${TYPE}-v${NUM}.zip"
 		 export FILE_NAME_${TYPE}="$FILE_NAME"
@@ -135,7 +135,7 @@ function ota() {
    cd $KERNEL_PATH/changelogs
       git add README.md commit_hash.json api.json
       git -c "user.name=shreejoy" -c "user.email=pshreejoy15@gmail.com" commit -m "OTA : $(date)"
-      git push -q https://${GITHUB_AUTH_TOKEN}@github.com/nano-kernel-project/Nano_Extras HEAD:master
+      git push -q https://shreejoy:${GITHUB_AUTH_TOKEN}@github.com/nano-kernel-project/Nano_Extras HEAD:master
    cd ..
 }
   
